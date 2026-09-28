@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Controle Financeiro CNPJ</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--tx:#1b2430;--mut:#6b7684;--bd:#dde1e7;--pri:#1f4e8c;--pos:#1a7f4b;--neg:#c0392b;--sub:#e8eef7;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161c;--card:#1b222b;--tx:#e6eaf0;--mut:#98a2b0;--bd:#2c3540;--pri:#6ea3e6;--pos:#4cc38a;--neg:#ef7b6d;--sub:#243040}}
+:root[data-theme="dark"]{--bg:#12161c;--card:#1b222b;--tx:#e6eaf0;--mut:#98a2b0;--bd:#2c3540;--pri:#6ea3e6;--pos:#4cc38a;--neg:#ef7b6d;--sub:#243040}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:14px}
+h1{font-size:20px;margin:0}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+button,select,input{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:7px 10px}
+button{cursor:pointer}
+nav button.on,button.pri{background:var(--pri);color:#fff;border-color:var(--pri)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px}
+.kpi{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px}
+.kpi small{color:var(--mut);display:block}.kpi b{font-size:19px}
+.pos{color:var(--pos)}.neg{color:var(--neg)}
+.scroll{overflow-x:auto;max-width:100%}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:right;white-space:nowrap}
+th{background:var(--sub);position:sticky;top:0}
+td:first-child,th:first-child{text-align:left}
+tr.s td{background:var(--sub);font-weight:600}tr.t td{font-weight:700;border-top:2px solid var(--pri)}
+tr.p td{color:var(--mut);font-style:italic}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;align-items:end}
+.form label{display:block;color:var(--mut);font-size:12px}.form input,.form select{width:100%}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.mut{color:var(--mut);font-size:12px}
+.hide{display:none}
+.x{border:0;background:none;color:var(--neg);font-size:16px;padding:2px 8px}
+</style>
+</head>
+<body>
+<div class="wrap" id="auth"><div class="card" style="max-width:380px;margin:6vh auto">
+ <h1>💼 Controle Financeiro — CNPJ</h1>
+ <p class="mut">Entre para acessar seus dados em qualquer aparelho.</p>
+ <div class="form" style="grid-template-columns:1fr">
+  <div><label>E-mail</label><input id="em" type="email" autocomplete="email"></div>
+  <div><label>Senha</label><input id="pw" type="password" autocomplete="current-password"></div>
+  <button class="pri" id="ae">Entrar</button><button id="ac">Criar conta</button>
+  <button id="ag">Entrar com Google</button><button id="ar">Esqueci a senha</button>
+ </div>
+ <div id="am" class="mut" style="margin-top:8px"></div>
+</div></div>
+<div class="wrap hide" id="app">
+<header>
+ <h1>💼 Controle Financeiro — CNPJ</h1>
+ <div class="row"><span id="st" class="mut"></span><label class="mut">Ano <input id="yr" type="number" min="2000" max="2100" style="width:84px"></label><button id="lo">Sair</button></div>
+</header>
+<nav id="nav"></nav>
+
+<section id="t-painel"></section>
+
+<section id="t-lanc" class="hide">
+ <div class="card">
+  <div class="form">
+   <div><label>Data</label><input id="fd" type="date"></div>
+   <div><label>Categoria</label><select id="fc"></select></div>
+   <div><label>Descrição</label><input id="ft" type="text" placeholder="Ex.: NF 001 cliente X"></div>
+   <div><label>Valor (R$)</label><input id="fv" type="number" step="0.01" min="0" placeholder="0,00"></div>
+   <div><button class="pri" id="fa" style="width:100%">Adicionar</button></div>
+  </div>
+  <div class="mut" style="margin-top:6px">Informe sempre valor positivo — o grupo da categoria define se é receita, custo ou despesa.</div>
+ </div>
+ <div class="card">
+  <div class="row" style="margin-bottom:8px"><label class="mut">Mês <select id="fm"></select></label></div>
+  <div class="scroll"><table id="ltab"></table></div>
+ </div>
+</section>
+
+<section id="t-dre" class="hide"><div class="card"><div class="scroll" id="dre"></div>
+ <div class="mut" style="margin-top:8px">DRE gerencial (regime de caixa, baseada nos seus lançamentos). Não substitui a contabilidade oficial.</div></div></section>
+
+<section id="t-cat" class="hide">
+ <div class="card">
+  <div class="form">
+   <div><label>Nova categoria</label><input id="cn" type="text" placeholder="Ex.: Lavagem de veículos"></div>
+   <div><label>Grupo</label><select id="cg"></select></div>
+   <div><button class="pri" id="ca" style="width:100%">Criar categoria</button></div>
+  </div>
+ </div>
+ <div class="card"><div class="scroll"><table id="ctab"></table></div></div>
+ <div class="card">
+  <b>Backup dos dados</b>
+  <div class="mut" style="margin:4px 0 8px">Os dados ficam salvos neste navegador. Faça backup de vez em quando.</div>
+  <div class="row">
+   <button id="bj">Baixar backup (.json)</button>
+   <button id="bc">Baixar lançamentos (.csv)</button>
+   <label class="mut">Restaurar backup <input id="bi" type="file" accept=".json"></label>
+  </div>
+  <div id="msg" class="mut" style="margin-top:6px"></div>
+ </div>
+</section>
+</div>
+
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,onAuthStateChanged,signInWithPopup,GoogleAuthProvider,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getFirestore,initializeFirestore,persistentLocalCache,persistentMultipleTabManager,collection,doc,setDoc,deleteDoc,onSnapshot,writeBatch} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyCLz2sIkQ3PlhFBzgcfcinpfSUljRhfTdg",authDomain:"cronosexclusivo-f0c56.firebaseapp.com",projectId:"cronosexclusivo-f0c56",storageBucket:"cronosexclusivo-f0c56.firebasestorage.app",messagingSenderId:"276323784098",appId:"1:276323784098:web:14decf1b52ee89569b0efb"};
+
+const K="fin_cnpj_v2",MES=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+const G=["Receita","Imposto sobre receita","Custo variável","Despesa fixa","Pró-labore","Distribuição de lucros"];
+const DEF=[["Receita de serviços/vendas",0],["Outras receitas",0],["DAS / Simples Nacional",1],["Outros impostos sobre receita",1],["Combustível",2],["Pedágio",2],["Manutenção de veículos",2],["Frete terceirizado / agregados",2],["Comissões",2],["Materiais e insumos",2],["Aluguel / galpão",3],["Salários e encargos",3],["Contador",3],["Seguros",3],["Internet, telefone e sistemas",3],["Tarifas bancárias",3],["Parcelas de financiamento (empresa)",3],["Outras despesas fixas",3],["Pró-labore (sócio)",4],["Distribuição de lucros",5]];
+let S={year:new Date().getFullYear(),cats:DEF.map(([n,g])=>({n,g:G[g]})),tx:[]};
+try{const y=localStorage.getItem(K+"_yr");if(y)S.year=+y}catch(e){}
+const save=()=>{try{localStorage.setItem(K+"_yr",S.year)}catch(e){}};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const brl=v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const pct=v=>(v*100).toFixed(1).replace(".",",")+"%";
+const gOf=n=>(S.cats.find(c=>c.n===n)||{}).g;
+
+function calc(){
+ const m={};G.forEach(g=>m[g]=Array(12).fill(0));
+ S.tx.forEach(t=>{const[y,mo]=t.d.split("-").map(Number);const g=gOf(t.c);if(y===S.year&&g)m[g][mo-1]+=t.v});
+ const a=()=>Array(12).fill(0),r={};
+ r.rec=m[G[0]];r.imp=m[G[1]];r.cv=m[G[2]];r.df=m[G[3]];r.pl=m[G[4]];r.dl=m[G[5]];
+ r.liq=r.rec.map((v,i)=>v-r.imp[i]);r.mc=r.liq.map((v,i)=>v-r.cv[i]);
+ r.op=r.mc.map((v,i)=>v-r.df[i]);r.res=r.op.map((v,i)=>v-r.pl[i]);
+ r.ret=r.res.map((v,i)=>v-r.dl[i]);let s=0;r.acc=r.ret.map(v=>s+=v);
+ return r}
+const sum=a=>a.reduce((x,y)=>x+y,0);
+
+function tabs(){
+ const T=[["painel","Painel"],["lanc","Lançamentos"],["dre","DRE"],["cat","Categorias e backup"]];
+ $("nav").innerHTML=T.map(([k,l])=>`<button data-t="${k}">${l}</button>`).join("");
+ $("nav").onclick=e=>{const k=e.target.dataset.t;if(k)show(k)};
+}
+function show(k){
+ ["painel","lanc","dre","cat"].forEach(x=>$("t-"+x).classList.toggle("hide",x!==k));
+ [...$("nav").children].forEach(b=>b.classList.toggle("on",b.dataset.t===k));
+ try{localStorage.setItem(K+"_tab",k)}catch(e){}
+}
+
+function painel(r){
+ const R=sum(r.rec),L=sum(r.res),acc=r.acc[11];
+ const fix=sum(r.df)+sum(r.pl),mcp=R?sum(r.mc)/R:0,pe=mcp>0?fix/mcp/12:null;
+ const k=(l,v,c="")=>`<div class="kpi"><small>${l}</small><b class="${c}">${v}</b></div>`;
+ const mx=Math.max(1,...r.rec,...r.res.map(Math.abs));
+ const W=720,H=200,bw=W/12;
+ const bars=r.rec.map((v,i)=>{const x=i*bw+8,w=(bw-16)/2,h1=v/mx*150,h2=Math.abs(r.res[i])/mx*150;
+  return `<rect x="${x}" y="${170-h1}" width="${w}" height="${h1}" fill="var(--pri)"/>`+
+  `<rect x="${x+w}" y="${170-h2}" width="${w}" height="${h2}" fill="${r.res[i]>=0?"var(--pos)":"var(--neg)"}"/>`+
+  `<text x="${i*bw+bw/2}" y="190" text-anchor="middle" font-size="11" fill="var(--mut)">${MES[i]}</text>`}).join("");
+ $("t-painel").innerHTML=`<div class="kpis">
+ ${k("Receita bruta",brl(R))}${k("Resultado líquido (lucro)",brl(L),L>=0?"pos":"neg")}
+ ${k("Margem líquida",R?pct(L/R):"-")}${k("Pró-labore pago",brl(sum(r.pl)))}
+ ${k("Lucros distribuídos",brl(sum(r.dl)))}${k("Lucro retido (pode distribuir/reinvestir)",brl(acc),acc>=0?"pos":"neg")}
+ ${k("Faturamento mensal p/ empatar",pe===null?"n/d":brl(pe))}</div>
+ <div class="card"><b>Receita × resultado líquido por mês</b>
+ <div class="mut"><span style="color:var(--pri)">■</span> Receita bruta &nbsp; <span style="color:var(--pos)">■</span> Resultado líquido</div>
+ <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Gráfico mensal de receita e resultado líquido">${bars}</svg></div>
+ ${S.tx.length?"":'<div class="card mut">Ainda não há lançamentos. Vá em <b>Lançamentos</b> e registre a primeira entrada ou saída.</div>'}`;
+}
+
+function dre(r){
+ const R=sum(r.rec);
+ const L=[["Receita bruta",r.rec],["(–) Impostos sobre a receita",r.imp],["(=) Receita líquida",r.liq,"s"],
+ ["(–) Custos variáveis",r.cv],["(=) Margem de contribuição",r.mc,"s"],["(–) Despesas fixas",r.df],
+ ["(=) Resultado operacional",r.op,"s"],["(–) Pró-labore dos sócios",r.pl],["(=) RESULTADO LÍQUIDO (lucro)",r.res,"t"],
+ ["(–) Distribuição de lucros",r.dl,"p"],["(=) Lucro retido no mês",r.ret,"s"]];
+ let h="<table><tr><th>Descrição</th>"+MES.map(m=>`<th>${m}</th>`).join("")+"<th>Total</th><th>% receita</th></tr>";
+ L.forEach(([l,a,c])=>{const t=sum(a);
+  h+=`<tr class="${c||""}"><td>${l}</td>${a.map(v=>`<td>${v?brl(v):"-"}</td>`).join("")}<td>${t?brl(t):"-"}</td><td>${R?pct(t/R):"-"}</td></tr>`});
+ h+=`<tr class="t"><td>Lucro retido acumulado</td>${r.acc.map(v=>`<td>${brl(v)}</td>`).join("")}<td>${brl(r.acc[11])}</td><td></td></tr>`;
+ h+=`<tr class="p"><td>Ponto de equilíbrio (fat. mensal)</td>${r.rec.map((_,i)=>{const mc=r.rec[i]?r.mc[i]/r.rec[i]:0;return `<td>${mc>0?brl((r.df[i]+r.pl[i])/mc):"n/d"}</td>`}).join("")}<td></td><td></td></tr></table>`;
+ $("dre").innerHTML=h;
+}
+
+function lanc(){
+ const mo=+$("fm").value;
+ const list=S.tx.filter(t=>t.d.startsWith(S.year+"-")&&(!mo||+t.d.slice(5,7)===mo)).sort((a,b)=>b.d.localeCompare(a.d));
+ $("ltab").innerHTML="<tr><th>Data</th><th>Categoria</th><th>Grupo</th><th>Descrição</th><th>Valor</th><th></th></tr>"+
+ (list.map(t=>`<tr><td>${t.d.split("-").reverse().join("/")}</td><td>${esc(t.c)}</td><td>${esc(gOf(t.c)||"?")}</td><td style="text-align:left">${esc(t.t)}</td><td>${brl(t.v)}</td><td><button class="x" data-id="${t.id}" title="Excluir">×</button></td></tr>`).join("")||'<tr><td colspan="6" class="mut" style="text-align:center">Nenhum lançamento neste período.</td></tr>');
+}
+function cats(){
+ $("fc").innerHTML=G.map(g=>`<optgroup label="${g}">${S.cats.filter(c=>c.g===g).map(c=>`<option>${esc(c.n)}</option>`).join("")}</optgroup>`).join("");
+ $("cg").innerHTML=G.map(g=>`<option>${g}</option>`).join("");
+ $("ctab").innerHTML="<tr><th>Categoria</th><th>Grupo</th></tr>"+S.cats.map(c=>`<tr><td>${esc(c.n)}</td><td style="text-align:left">${esc(c.g)}</td></tr>`).join("");
+}
+function all(){save();const r=calc();painel(r);dre(r);lanc()}
+
+$("yr").value=S.year;$("yr").onchange=e=>{S.year=+e.target.value||S.year;all()};
+$("fm").innerHTML='<option value="0">Todos</option>'+MES.map((m,i)=>`<option value="${i+1}">${m}</option>`).join("");
+$("fm").onchange=lanc;
+$("fd").value=new Date().toISOString().slice(0,10);
+const app=initializeApp(firebaseConfig),auth=getAuth(app);
+let db;try{db=initializeFirestore(app,{localCache:persistentLocalCache({tabManager:persistentMultipleTabManager()})})}catch(e){db=getFirestore(app)}
+let uid=null,unsubs=[];
+const st=t=>$("st").textContent=t||"";
+$("fa").onclick=async()=>{const d=$("fd").value,c=$("fc").value,v=parseFloat($("fv").value);
+ if(!d||!c||!(v>0)){alert("Preencha data, categoria e um valor maior que zero.");return}
+ const id=Date.now()+Math.random().toString(36).slice(2,6),t={d,c,t:$("ft").value.trim(),v:Math.round(v*100)/100};
+ if(+d.slice(0,4)!==S.year){S.year=+d.slice(0,4);$("yr").value=S.year}
+ $("ft").value="";$("fv").value="";
+ try{await setDoc(doc(db,"users",uid,"tx",id),t)}catch(e){st("Erro ao salvar: "+(e.code||e.message))}};
+$("ltab").onclick=async e=>{const id=e.target.dataset.id;if(id&&confirm("Excluir este lançamento?")){
+ try{await deleteDoc(doc(db,"users",uid,"tx",id))}catch(x){st("Erro ao excluir: "+(x.code||x.message))}}};
+$("ca").onclick=async()=>{const n=$("cn").value.trim();if(!n)return;
+ if(S.cats.some(c=>c.n.toLowerCase()===n.toLowerCase())){alert("Essa categoria já existe.");return}
+ S.cats.push({n,g:$("cg").value});$("cn").value="";cats();
+ try{await setDoc(doc(db,"users",uid,"meta","config"),{cats:S.cats})}catch(e){st("Erro ao salvar: "+(e.code||e.message))}};
+async function dl(name,data){
+ const m=$("msg");let d=null;
+ try{d=window.claude&&await claude.use("downloads")}catch(e){}
+ if(!d){m.textContent="Download indisponível neste ambiente.";return}
+ try{await d.save({filename:name,data});m.textContent="Arquivo pronto."}catch(e){m.textContent=e&&e.code==="declined"?"Download cancelado.":"Não foi possível salvar o arquivo."}}
+$("bj").onclick=()=>dl("backup-financeiro-cnpj.json",JSON.stringify(S));
+$("bc").onclick=()=>{const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+ dl("lancamentos-cnpj.csv","Data,Categoria,Grupo,Descrição,Valor\n"+S.tx.slice().sort((a,b)=>a.d.localeCompare(b.d)).map(t=>[t.d,q(t.c),q(gOf(t.c)||""),q(t.t),t.v.toFixed(2)].join(",")).join("\n"))};
+$("bi").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
+ r.onload=async()=>{try{const o=JSON.parse(r.result);if(!Array.isArray(o.tx))throw 0;
+  if(!confirm("Importar "+o.tx.length+" lançamentos do backup para a sua conta?"))return;
+  for(let i=0;i<o.tx.length;i+=400){const b=writeBatch(db);
+   o.tx.slice(i,i+400).forEach(t=>b.set(doc(db,"users",uid,"tx",String(t.id)),{d:t.d,c:t.c,t:t.t||"",v:+t.v}));await b.commit()}
+  if(Array.isArray(o.cats)){S.cats=o.cats;await setDoc(doc(db,"users",uid,"meta","config"),{cats:S.cats});cats()}
+  $("msg").textContent="Backup importado."}
+  catch(x){$("msg").textContent="Arquivo de backup inválido ou erro ao importar."}};r.readAsText(f);e.target.value=""};
+const am=t=>$("am").textContent=t;
+const erro=e=>({"auth/invalid-credential":"E-mail ou senha incorretos.","auth/email-already-in-use":"Este e-mail já tem conta.","auth/weak-password":"Senha fraca (mínimo 6 caracteres).","auth/invalid-email":"E-mail inválido.","auth/unauthorized-domain":"Domínio não autorizado no Firebase (Authentication > Configurações > Domínios autorizados).","auth/popup-closed-by-user":"Login cancelado.","auth/operation-not-allowed":"Este método de login não está ativado no Firebase.","auth/api-key-not-valid.-please-pass-a-valid-api-key.":"Chave da API inválida — confira o firebaseConfig."}[e.code]||"Erro: "+(e.code||e.message));
+$("ae").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("em").value.trim(),$("pw").value)}catch(e){am(erro(e))}};
+$("ac").onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$("em").value.trim(),$("pw").value)}catch(e){am(erro(e))}};
+$("ag").onclick=async()=>{try{await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){am(erro(e))}};
+$("ar").onclick=async()=>{const m=$("em").value.trim();if(!m){am("Digite o e-mail acima.");return}
+ try{await sendPasswordResetEmail(auth,m);am("Enviamos um e-mail para redefinir a senha.")}catch(e){am(erro(e))}};
+$("lo").onclick=()=>signOut(auth);
+onAuthStateChanged(auth,u=>{
+ unsubs.forEach(f=>f());unsubs=[];uid=u?u.uid:null;
+ $("app").classList.toggle("hide",!u);$("auth").classList.toggle("hide",!!u);
+ if(!u){S.tx=[];return}
+ st("Sincronizando…");
+ const bad=e=>st("Erro ao ler dados ("+(e.code||e.message)+"). Confira as regras do Firestore.");
+ unsubs.push(onSnapshot(collection(db,"users",uid,"tx"),s=>{S.tx=s.docs.map(d=>({id:d.id,...d.data()}));st(s.metadata.hasPendingWrites?"Salvando…":"Salvo na nuvem ✔");all()},bad));
+ unsubs.push(onSnapshot(doc(db,"users",uid,"meta","config"),s=>{if(s.exists()&&Array.isArray(s.data().cats))S.cats=s.data().cats;cats();all()},bad));
+});
+tabs();cats();all();
+let t0="painel";try{t0=localStorage.getItem(K+"_tab")||"painel"}catch(e){}show(t0);
+</script>
+</body>
+</html>
